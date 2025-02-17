@@ -1,3 +1,4 @@
+use std::f32::consts::E;
 use crate::tensor::Tensor;
 
 // get (row) vectors from a 2D table given a list of indices
@@ -71,25 +72,94 @@ pub fn masked_softmax(y: &mut Tensor<f32>) {
 }
 
 pub fn rms_norm(y: &mut Tensor<f32>, x: &Tensor<f32>, w: &Tensor<f32>, epsilon: f32) {
-    todo!("实现 rms_norm，计算前做一些必要的检查会帮助你后续调试")
+    //todo!("实现 rms_norm，计算前做一些必要的检查会帮助你后续调试")
+    let ndim = y.shape()[y.shape().len()-1]; //最后一维
+    //println!("{ndim}");
+    assert!(ndim == x.shape()[x.shape().len()-1]);
+
+    let seq_len = y.shape()[y.shape().len() - 2];
+    //println!("{seq_len}");
+
+    let _x = x.data();
+    let _y = unsafe { y.data_mut() };
+    let _w=w.data();
+    for i in 0..seq_len{
+        let mut sum_x = 0.;
+        for j in 0..ndim{
+            sum_x += _x[i*ndim+j].powf(2.0);    
+        }
+        let rms_x = (sum_x /ndim as f32 + epsilon).sqrt();
+        
+        (0..ndim).for_each(|j|_y[i*ndim+j] = _x[i*ndim+j] * _w[j] / rms_x);
+        //_y[i] = w * x.data()[i] / rms_x;
+    }
+    //println!("{:?}",y.data());
 }
 
 // y = silu(x) * y
 // hint: this is an element-wise operation
 pub fn swiglu(y: &mut Tensor<f32>, x: &Tensor<f32>) {
-    // let len = y.size();
-    // assert!(len == x.size());
+    let len = y.size();
+    assert!(len == x.size());
 
     // let _y = unsafe { y.data_mut() };
     // let _x = x.data();
+    //silu(x) = sigmoid(x) × x
+    //sigmoid(x) = \frac{1}{1 + e^{-x}}
 
-    todo!("实现 silu，这里给了一些前期准备工作的提示，你可以参考")
+    //todo!("实现 silu，这里给了一些前期准备工作的提示，你可以参考")
+    let _y = unsafe { y.data_mut() };
+    let _x = x.data();
+    //println!("{:?}",_y);
+    
+    let sigmoid_x:Vec<f32> = _x.into_iter()
+                             .map(|i|1.0/(1.0+E.powf(-(*i))))
+                             .collect();
+    let silu_x:Vec<f32> = sigmoid_x.iter()
+                          .zip(_x.iter())
+                          .map(|(&a,&b)|a * b)
+                          .collect();
+    let vec_y:Vec<f32> = silu_x.iter()
+                  .zip(_y.iter())
+                  .map(|(&a,&b)|a * b)
+                  .collect();
+    //y = Tensor::<f32>::new(vec_y, &y.shape());
+    for i in 0..len{
+        _y[i] = vec_y[i];
+    }
+    //println!("{:?}",y.data());
+    //println!("{:?}",y.shape());
+
+
 }
 
 // C = beta * C + alpha * A @ B^T
 // hint: You don't need to do an explicit transpose of B
 pub fn matmul_transb(c: &mut Tensor<f32>, beta: f32, a: &Tensor<f32>, b: &Tensor<f32>, alpha: f32) {
-    todo!("实现 matmul_transb，计算前做一些必要的检查会帮助你后续调试");
+    //todo!("实现 matmul_transb，计算前做一些必要的检查会帮助你后续调试");
+    let mdim = a.shape()[a.shape().len()-2];
+    let ndim = b.shape()[a.shape().len()-2];
+    let kdim = a.shape()[a.shape().len()-1];
+
+    assert!(kdim == b.shape()[a.shape().len()-1]);
+
+    //println!("{:?}",&a.data()[0..4]);
+    
+    let _c=unsafe { c.data_mut()};
+
+    for i in 0..mdim{
+        //let mut matmul_ab: f32 = 0.;
+        for j in 0..ndim {
+            //(0..kdim).for_each(|k| matmul_ab += a.data()[i*mdim+k] * b.data()[j*ndim+k]);
+            let matmul_ab = a.data()[i*kdim..kdim+i*kdim].iter()
+                                           .zip(b.data()[j*kdim..kdim+j*kdim].iter())
+                                           .map(|(&a,&b)| a * b)
+                                           .sum::<f32>();
+            //println!("{matmul_ab}");
+            _c[i*ndim+j] = alpha * matmul_ab + beta * _c[i*ndim+j];
+        }
+    }
+    //println!("{:?}",c.data());
 }
 
 // Dot product of two tensors (treated as vectors)
