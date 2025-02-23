@@ -1,7 +1,7 @@
 use std::vec;
 
 use crate::config::LlamaConfigJson;
-use crate::tensor::{self, Tensor};
+use crate::tensor::Tensor;
 use safetensors::SafeTensors;
 pub struct LLamaParams<T> {
     // token_id to embedding lookup table
@@ -23,7 +23,7 @@ pub struct LLamaParams<T> {
 }
 
 impl LLamaParams<f32> {
-    pub fn from_safetensors(safetensor: &SafeTensors, config: &LlamaConfigJson) -> Self {
+    pub fn from_safetensors(safetensor: &SafeTensors, _config: &LlamaConfigJson) -> Self {
         // todo!("实现从safetensors文件的模型参数加载");
         // let get_tensor: impl Fn(&str) -> Tensor<f32> = |name: &str| {
         // ...    
@@ -66,7 +66,7 @@ impl LLamaParams<f32> {
 mod test{
     use super::*;
     use std::fs::File;    
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
     
     //use crate::slice::IndexOp;
     //use proptest::prelude::*;
@@ -85,6 +85,7 @@ fn load_param(){
         println!("Tensor shape: {:?}", tensor.shape());
         //println!("Tensor data: {:?}", tensor.data());
     }
+    println!("{:?}",params.embedding_table.data());
 }
 }
 

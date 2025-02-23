@@ -141,7 +141,7 @@ pub fn matmul_transb(c: &mut Tensor<f32>, beta: f32, a: &Tensor<f32>, b: &Tensor
     let ndim = b.shape()[a.shape().len()-2];
     let kdim = a.shape()[a.shape().len()-1];
 
-    assert!(kdim == b.shape()[a.shape().len()-1]);
+    assert!(kdim == b.shape()[b.shape().len()-1]);
 
     //println!("{:?}",&a.data()[0..4]);
     
